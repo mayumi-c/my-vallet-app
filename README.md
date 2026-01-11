@@ -1,6 +1,12 @@
-# my-vallet-app
-バレットジャーナルアプリ
-![アプリのデモ映像](images/Firstdeploy.gif)
+# バレットジャーナル App (v1.0)
+
+Vite + React + Supabase で作成したタスク管理アプリです。
+
+## デモ
 <p align="center">
-  <img src="images/demo.gif" width="600px" alt="demo">
+  <img src="images/Firstdeploy.gif" width="600px" alt="アプリの動作デモ">
 </p>
+
+## 主な機能
+- タスクの追加・完了・延期
+- Supabaseによるデータ永続化
