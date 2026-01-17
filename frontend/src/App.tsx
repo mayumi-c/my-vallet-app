@@ -3,6 +3,7 @@ import { supabase } from './supabaseClient';
 import type { Session } from '@supabase/supabase-js';
 import Auth from './Auth';
 import PasswordReset from './PasswordReset';
+import Settings from './Settings';
 import './App.css';
 
 interface Task {
@@ -21,6 +22,9 @@ function App() {
   const [newTaskText, setNewTaskText] = useState('');
   const [reschedulingTask, setReschedulingTask] = useState<number | null>(null);
   const [rescheduleDate, setRescheduleDate] = useState('');
+  const [displayDate, setDisplayDate] = useState(new Date());
+  const [theme, setTheme] = useState('theme-dark-blue');
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -41,6 +45,10 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    document.documentElement.className = theme;
+  }, [theme]);
+
   // --- Data Fetching ---
   const fetchTasks = async () => {
     if (!session?.user) return;
@@ -49,6 +57,7 @@ function App() {
       const { data, error } = await supabase
         .from('tasks')
         .select('*')
+        .neq('status', 'completed')
         .order('created_at', { ascending: true });
 
       if (error) {
@@ -75,14 +84,52 @@ function App() {
     setTasks([]);
   };
 
+  const displayDateString = displayDate.toLocaleDateString('ja-JP', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    weekday: 'long',
+  });
+
+  const handlePrevDay = () => {
+    const newDate = new Date(displayDate);
+    newDate.setDate(newDate.getDate() - 1);
+    setDisplayDate(newDate);
+  };
+
+  const handleNextDay = () => {
+    const newDate = new Date(displayDate);
+    newDate.setDate(newDate.getDate() + 1);
+    setDisplayDate(newDate);
+  };
+
+  const handleToday = () => {
+    setDisplayDate(new Date());
+  };
+
   const addTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskText.trim() || !session?.user) return;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const displayDateNormalized = new Date(displayDate);
+    displayDateNormalized.setHours(0, 0, 0, 0);
+
+    let status: 'pending' | 'rescheduled' = 'pending';
+    let rescheduled_to: string | undefined = undefined;
+
+    if (displayDateNormalized.getTime() !== today.getTime()) {
+      status = 'rescheduled';
+      rescheduled_to = displayDate.toISOString().split('T')[0];
+    }
+
     try {
       console.log('Adding task for user:', session.user.id);
       const { data, error } = await supabase.from('tasks').insert({ 
         text: newTaskText, 
-        status: 'pending',
+        status: status,
+        rescheduled_to: rescheduled_to,
         user_id: session.user.id 
       }).select();
       
@@ -120,11 +167,18 @@ function App() {
     updateTask(id, { status: 'completed' });
   };
   
-  const handleRescheduleClick = (id: number) => {
+  const handleChangeDateClick = (id: number) => {
+    const taskToChange = tasks.find(t => t.id === id);
+    if (!taskToChange) return;
+
     setReschedulingTask(id);
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    setRescheduleDate(tomorrow.toISOString().split('T')[0]);
+    
+    if (taskToChange.status === 'rescheduled' && taskToChange.rescheduled_to) {
+      setRescheduleDate(taskToChange.rescheduled_to);
+    } else {
+      // It's a 'pending' task, so its date is today.
+      setRescheduleDate(new Date().toISOString().split('T')[0]);
+    }
   };
 
   const handleSaveReschedule = (id: number) => {
@@ -141,29 +195,44 @@ function App() {
 
   // --- Render Logic ---
   const groupedTasks = useMemo(() => {
-    const groups: { [key: string]: Task[] } = tasks.reduce((acc, task) => {
-      let key = '今日のタスク'; // Default group for 'pending'
-      if (task.status === 'rescheduled' && task.rescheduled_to) {
-        key = task.rescheduled_to;
-      } else if (task.status === 'completed') {
-        key = '完了';
+    const displayDateStr = displayDate.toISOString().split('T')[0];
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+
+    const tasksForView = tasks.filter(task => {
+      if (task.status === 'rescheduled' && task.rescheduled_to === displayDateStr) {
+        return true;
       }
-      
-      if (!acc[key]) {
-        acc[key] = [];
+      if (task.status === 'pending' && displayDateStr === todayStr) {
+        return true;
       }
-      acc[key].push(task);
-      return acc;
-    }, {} as { [key: string]: Task[] });
+      return false;
+    });
+
+    const groups: { [key:string]: Task[] } = {};
+    for (const task of tasksForView) {
+      const key = task.status === 'pending' ? '今日のタスク' : task.rescheduled_to!;
+      if (!groups[key]) {
+        groups[key] = [];
+      }
+      groups[key].push(task);
+    }
     return groups;
-  }, [tasks]);
+
+  }, [tasks, displayDate]);
 
   const sortedGroupKeys = useMemo(() => {
+    // When viewing today, we might have "今日のタスク" and a date string for today.
+    // We want "今日のタスク" to come first.
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+
     return Object.keys(groupedTasks).sort((a, b) => {
       if (a === '今日のタスク') return -1;
       if (b === '今日のタスク') return 1;
-      if (a === '完了') return 1;
-      if (b === '完了') return -1;
+      // if a is today's date string and b is not "今日のタスク"
+      if (a === todayStr && b !== '今日のタスク') return -1;
+      if (b === todayStr && a !== '今日のタスク') return 1;
       return new Date(a).getTime() - new Date(b).getTime();
     });
   }, [groupedTasks]);
@@ -183,10 +252,21 @@ function App() {
 
   return (
     <div className="App">
+      <button className="settings-btn" onClick={() => setShowSettings(!showSettings)}>⚙️</button>
+      {showSettings && <Settings setTheme={setTheme} onClose={() => setShowSettings(false)} />}
       <header className="app-header">
         <h1>My Bullet Journal</h1>
         <button onClick={handleLogout} className="logout-btn">ログアウト</button>
       </header>
+
+      <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+        <h2>{displayDateString}</h2>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '1rem' }}>
+          <button onClick={handlePrevDay}>‹ 前日</button>
+          <button onClick={handleToday}>今日</button>
+          <button onClick={handleNextDay}>翌日 ›</button>
+        </div>
+      </div>
       
       <form onSubmit={addTask} className="task-form">
         <input
@@ -225,7 +305,7 @@ function App() {
                          <div className="task-actions">
                             <button onClick={() => handleComplete(task.id)} className="complete-btn">完了</button>
                             {task.status !== 'rescheduled' && (
-                                <button onClick={() => handleRescheduleClick(task.id)} className="reschedule-btn">延期</button>
+                                <button onClick={() => handleChangeDateClick(task.id)} className="change-date-btn">変更</button>
                             )}
                          </div>
                       )}
