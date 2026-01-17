@@ -1,26 +1,62 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from './supabaseClient';
+import type { Session } from '@supabase/supabase-js';
+import Auth from './Auth';
+import PasswordReset from './PasswordReset';
 import './App.css';
 
 interface Task {
   id: number;
   text: string;
   status: 'pending' | 'completed' | 'rescheduled';
-  rescheduled_to?: string; // Supabaseの推奨命名規則に合わせてスネークケースに
+  rescheduled_to?: string;
   created_at: string;
+  user_id: string; // Add user_id to interface
 }
 
 function App() {
+  const [session, setSession] = useState<Session | null>(null);
+  const [isPasswordResetting, setIsPasswordResetting] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTaskText, setNewTaskText] = useState('');
   const [reschedulingTask, setReschedulingTask] = useState<number | null>(null);
   const [rescheduleDate, setRescheduleDate] = useState('');
 
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth event:', event);
+      setSession(session);
+      
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsPasswordResetting(true);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   // --- Data Fetching ---
   const fetchTasks = async () => {
+    if (!session?.user) return;
+    
     try {
-      const { data, error } = await supabase.from('tasks').select('*').order('created_at', { ascending: true });
-      if (error) throw error;
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Supabase fetch error:', error);
+        alert(`タスクの取得に失敗しました: ${error.message}`);
+        throw error;
+      }
+      console.log('Fetched tasks:', data);
       setTasks(data as Task[]);
     } catch (error) {
       console.error('Error fetching tasks:', error);
@@ -28,17 +64,36 @@ function App() {
   };
 
   useEffect(() => {
-    fetchTasks();
-  }, []);
+    if (session) {
+      fetchTasks();
+    }
+  }, [session]);
 
   // --- Event Handlers ---
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setTasks([]);
+  };
+
   const addTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTaskText.trim()) return;
+    if (!newTaskText.trim() || !session?.user) return;
     try {
-      const { data, error } = await supabase.from('tasks').insert({ text: newTaskText, status: 'pending' }).select();
-      if (error) throw error;
+      console.log('Adding task for user:', session.user.id);
+      const { data, error } = await supabase.from('tasks').insert({ 
+        text: newTaskText, 
+        status: 'pending',
+        user_id: session.user.id 
+      }).select();
+      
+      if (error) {
+        console.error('Supabase insert error:', error);
+        alert(`タスクの追加に失敗しました: ${error.message}`);
+        throw error;
+      }
+      
       const newTask = data ? data[0] : null;
+      console.log('Inserted task:', newTask);
       if (newTask) {
         setTasks((prevTasks) => [...prevTasks, newTask]);
         setNewTaskText('');
@@ -109,15 +164,30 @@ function App() {
       if (b === '今日のタスク') return 1;
       if (a === '完了') return 1;
       if (b === '完了') return -1;
-      // Compare dates
       return new Date(a).getTime() - new Date(b).getTime();
     });
   }, [groupedTasks]);
 
+  if (isPasswordResetting) {
+    return (
+      <PasswordReset 
+        onSuccess={() => setIsPasswordResetting(false)} 
+        onCancel={() => setIsPasswordResetting(false)} 
+      />
+    );
+  }
+
+  if (!session) {
+    return <Auth />;
+  }
 
   return (
     <div className="App">
-      <h1>My Bullet Journal</h1>
+      <header className="app-header">
+        <h1>My Bullet Journal</h1>
+        <button onClick={handleLogout} className="logout-btn">ログアウト</button>
+      </header>
+      
       <form onSubmit={addTask} className="task-form">
         <input
           type="text"
