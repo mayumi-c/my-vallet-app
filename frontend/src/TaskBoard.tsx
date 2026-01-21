@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '../supabaseClient';
+import { supabase } from './supabaseClient';
 import { Link } from 'react-router-dom';
 
 interface Task {
@@ -59,7 +59,7 @@ export default function TaskBoard({ session }: TaskBoardProps) {
       if (completedTasks.length > limit) {
         // 2. 削除対象の特定 (古い方から超過分)
         const deleteCount = completedTasks.length - limit;
-        const toDeleteIds = completedTasks.slice(0, deleteCount).map(t => t.id);
+        const toDeleteIds = completedTasks.slice(0, deleteCount).map((t: any) => t.id);
 
         console.log(`Deleting ${deleteCount} old tasks...`);
 
