@@ -301,15 +301,12 @@ function App() {
                   ) : (
                     <>
                       <span>{task.text}</span>
-                      {task.status !== 'completed' && (
-                         <div className="task-actions">
-                            <button onClick={() => handleComplete(task.id)} className="complete-btn">完了</button>
-                            {task.status !== 'rescheduled' && (
-                                <button onClick={() => handleChangeDateClick(task.id)} className="change-date-btn">変更</button>
-                            )}
-                         </div>
-                      )}
-                    </>
+                                                {task.status !== 'completed' && (
+                                                   <div className="task-actions">
+                                                      <button onClick={() => handleComplete(task.id)} className="complete-btn">完了</button>
+                                                      <button onClick={() => handleChangeDateClick(task.id)} className="change-date-btn">変更</button>
+                                                   </div>
+                                                )}                    </>
                   )}
                 </li>
               ))}

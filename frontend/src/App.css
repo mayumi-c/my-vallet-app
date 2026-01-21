@@ -35,39 +35,21 @@
 }
 
 :root.theme-pastel {
-  --bg-color: #fdf6e3;
-  --app-bg-color: #fffaf0;
-  --text-color: #657b83;
-  --header-color: #586e75;
-  --primary-color: #268bd2;
-  --primary-hover-color: #1e6a9e;
-  --danger-color: #dc322f;
-  --danger-hover-color: #b52a27;
-  --border-color: #eee8d5;
-  --light-border-color: #fbf1c7;
-  --shadow-color: rgba(0, 0, 0, 0.1);
-  --task-bg-color: #fbf1c7;
-  --task-text-color: #586e75;
-  --task-completed-text-color: #93a1a1;
-  --button-text-color: #fdf6e3;
-}
-
-:root.theme-monotone {
-  --bg-color: #f5f5f5;
-  --app-bg-color: #ffffff;
-  --text-color: #212121;
-  --header-color: #000000;
-  --primary-color: #424242;
-  --primary-hover-color: #000000;
-  --danger-color: #757575;
-  --danger-hover-color: #424242;
-  --border-color: #e0e0e0;
-  --light-border-color: #eeeeee;
-  --shadow-color: rgba(0, 0, 0, 0.15);
-  --task-bg-color: #fafafa;
-  --task-text-color: #424242;
-  --task-completed-text-color: #9e9e9e;
-  --button-text-color: #ffffff;
+  --bg-color: #fef8f8; /* Very light pink/peach */
+  --app-bg-color: #fff0f0; /* Slightly darker light pink */
+  --text-color: #6a737b; /* Soft gray */
+  --header-color: #5d6771; /* Slightly darker soft gray */
+  --primary-color: #b2e4c7; /* Light green */
+  --primary-hover-color: #9cdcb7; /* Slightly darker light green */
+  --danger-color: #ff9999; /* Soft pinkish red */
+  --danger-hover-color: #ff8080; /* Slightly darker soft red */
+  --border-color: #dceada; /* Very light green */
+  --light-border-color: #ffeaea; /* Very light pink */
+  --shadow-color: rgba(255, 192, 203, 0.15); /* Pinkish shadow */
+  --task-bg-color: #fff5f5; /* Light pink */
+  --task-text-color: #6a737b; /* Soft gray */
+  --task-completed-text-color: #aeb5bd; /* Lighter soft gray */
+  --button-text-color: #333333; /* Darker text for light buttons */
 }
 
 
@@ -153,6 +135,8 @@ h2 {
 @media (min-width: 768px) {
   .task-container {
     grid-template-columns: 1fr 1fr;
+    width: 700px;
+    margin: 0 auto;
   }
 }
 
@@ -320,76 +304,247 @@ h2 {
 }
 
 .logout-btn:hover {
+
   background-color: var(--danger-hover-color);
+
 }
+
+
 
 /* --- Settings Panel --- */
+
 .settings-btn {
+
   position: fixed;
+
   top: 2rem;
+
   left: 2rem;
-  background: none;
-  border: 1px solid var(--border-color);
+
+  background-color: var(--app-bg-color);
+
   color: var(--text-color);
+
+  border: none;
+
+  border-radius: 8px;
+
+  padding: 0.5rem;
+
   font-size: 1.5rem;
+
   cursor: pointer;
+
   z-index: 1000;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+
+  box-shadow: 0 2px 5px var(--shadow-color);
+
+  line-height: 1;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  transition: transform 0.2s ease;
+
 }
+
+
+
+.settings-btn:hover {
+
+  transform: scale(1.1);
+
+}
+
+
 
 .settings-panel {
+
   position: fixed;
+
   top: 5rem;
+
   left: 2rem;
+
   background-color: var(--app-bg-color);
+
   border: 1px solid var(--border-color);
+
   border-radius: 8px;
+
   padding: 1rem;
+
   box-shadow: 0 4px 12px var(--shadow-color);
+
   z-index: 1001;
+
   width: 200px;
+
 }
+
+
 
 .settings-header {
+
   display: flex;
+
   justify-content: space-between;
+
   align-items: center;
+
   border-bottom: 1px solid var(--border-color);
+
   padding-bottom: 0.5rem;
+
   margin-bottom: 1rem;
+
 }
+
+
 
 .settings-header h3 {
+
   margin: 0;
+
   font-size: 1rem;
+
 }
+
+
 
 .settings-header .close-btn {
+
   background: none;
+
   border: none;
+
   font-size: 1.5rem;
+
   cursor: pointer;
+
   color: var(--text-color);
+
 }
+
+
 
 .theme-options {
+
   display: flex;
+
   flex-direction: column;
+
   gap: 0.5rem;
+
 }
+
+
 
 .theme-options button {
+
   width: 100%;
+
   padding: 0.5rem;
+
   border: 1px solid var(--border-color);
+
   background-color: var(--bg-color);
+
   color: var(--text-color);
+
   cursor: pointer;
+
   border-radius: 4px;
+
 }
 
+
+
 .theme-options button:hover {
+
   border-color: var(--primary-color);
+
+}
+
+
+
+/* --- Responsive Adjustments --- */
+
+@media (max-width: 767px) {
+
+  #root {
+
+    padding: 1rem;
+
+    max-width: 95vw;
+
+  }
+
+
+
+    .App {
+
+
+
+      padding: 1.5rem;
+
+
+
+      padding-top: 4.5rem;
+
+
+
+    }
+
+
+
+  .settings-btn {
+
+    position: absolute;
+
+    top: 1rem;
+
+    left: 1rem;
+
+  }
+
+
+
+  .logout-btn {
+
+    position: absolute;
+
+    top: 1rem;
+
+    right: 1rem;
+
+  }
+
+  
+
+  .task-list li {
+
+    flex-direction: column;
+
+    align-items: flex-start;
+
+    gap: 0.75rem;
+
+    font-size: 1rem;
+
+  }
+
+
+
+  .task-actions {
+
+    width: 100%;
+
+    justify-content: flex-end;
+
+  }
+
 }

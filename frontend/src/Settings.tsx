@@ -7,10 +7,9 @@ interface SettingsProps {
 
 const Settings: React.FC<SettingsProps> = ({ setTheme, onClose }) => {
   const themes = [
+    { name: 'デフォルト', id: '' },
     { name: 'ダークブルー', id: 'theme-dark-blue' },
     { name: 'パステル', id: 'theme-pastel' },
-    { name: 'モノトーン', id: 'theme-monotone' },
-    { name: 'デフォルト', id: '' },
   ];
 
   return (
